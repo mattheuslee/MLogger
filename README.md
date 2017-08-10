@@ -11,4 +11,4 @@ An example of the basic functions of MLogger can be found in `test.cpp`.
 [termcolor](https://github.com/ikalnytskyi/termcolor) for terminal colours
 
 ## Contact:
-Mattheus Lee `mattheuslee@gmail.com`
+Mattheus Lee [email me](mailto:mattheuslee@gmail.com)

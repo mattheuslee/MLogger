@@ -628,28 +628,65 @@ public:
         }
     }
 
-    static void logTrace(std::string const & message) {
+    static void log_trace(std::string const & message) {
         log("trace", message, termcolor::reset);
     }
 
-    static void logDebug(std::string const & message) {
+    static void log_debug(std::string const & message) {
         log("debug", message, termcolor::reset);
     }
 
-    static void logInfo(std::string const & message) {
+    static void log_info(std::string const & message) {
         log("info", message, termcolor::green);
     }
 
-    static void logWarn(std::string const & message) {
+    static void log_warn(std::string const & message) {
         log("warn", message, termcolor::yellow);
     }
 
-    static void logError(std::string const & message) {
+    static void log_error(std::string const & message) {
         log("error", message, termcolor::magenta);
     }
 
-    static void logFatal(std::string const & message) {
+    static void log_fatal(std::string const & message) {
         log("fatal", message, termcolor::red);
+    }
+
+    /***** stream variants on logging *****/
+    static std::ostream& log_trace_stream() {
+        instance_().streamerLogger_ = log_trace;
+        return instance_().streamer_;
+    }
+
+    static std::ostream& log_debug_stream() {
+        instance_().streamerLogger_ = log_debug;
+        return instance_().streamer_;
+    }
+
+    static std::ostream& log_info_stream() {
+        instance_().streamerLogger_ = log_info;
+        return instance_().streamer_;
+    }
+
+    static std::ostream& log_warn_stream() {
+        instance_().streamerLogger_ = log_warn;
+        return instance_().streamer_;
+    }
+
+    static std::ostream& log_error_stream() {
+        instance_().streamerLogger_ = log_error;
+        return instance_().streamer_;
+    }
+
+    static std::ostream& log_fatal_stream() {
+        instance_().streamerLogger_ = log_fatal;
+        return instance_().streamer_;
+    }
+
+    static void end_log_stream() {
+        instance_().streamerLogger_(instance_().streamer_.str());
+        instance_().streamer_.str("");
+        instance_().streamer_.clear();
     }
 
     /***** retrieve last logged message *****/
@@ -658,6 +695,8 @@ public:
     }
 
 private:
+    typedef void (*Log)(std::string const &);
+
     MLogger() {
         timeGetter_ = std::make_shared<StlTimeGetter>();
     }
@@ -667,6 +706,8 @@ private:
     std::unordered_set<std::string> levels_;
     std::shared_ptr<TimeGetter> timeGetter_;
     std::string lastMessage_;
+    std::ostringstream streamer_;
+    Log streamerLogger_;
 
     static MLogger& instance_() {
         static MLogger instance;

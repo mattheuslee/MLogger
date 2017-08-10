@@ -31,12 +31,20 @@ int main(void) {
     MLogger::log("fatal", "fatal, no colour"); // Logs without colour
 
     // Logs with default colours
-    MLogger::logTrace("trace with colour");
-    MLogger::logDebug("debug with colour");
-    MLogger::logInfo("info with colour");
-    MLogger::logWarn("warn with colour");
-    MLogger::logError("error with colour");
-    MLogger::logFatal("fatal with colour");
+    MLogger::log_trace("trace with colour");
+    MLogger::log_debug("debug with colour");
+    MLogger::log_info("info with colour");
+    MLogger::log_warn("warn with colour");
+    MLogger::log_error("error with colour");
+    MLogger::log_fatal("fatal with colour");
+
+    // Logs using streams
+    MLogger::log_trace_stream() << "trace" << " using streams " << 0; MLogger::end_log_stream();
+    MLogger::log_debug_stream() << "debug" << " using streams " << 1; MLogger::end_log_stream();
+    MLogger::log_info_stream() << "info" << " using streams " << 2; MLogger::end_log_stream();
+    MLogger::log_warn_stream() << "warn" << " using streams " << 3; MLogger::end_log_stream();
+    MLogger::log_error_stream() << "error" << " using streams " << 4; MLogger::end_log_stream();
+    MLogger::log_fatal_stream() << "fatal" << " using streams " << 5; MLogger::end_log_stream();
 
     // Custom date getter
     struct MyTimeGetter : public MLogger::TimeGetter {
@@ -45,17 +53,17 @@ int main(void) {
         }
     } myTimeGetter;
     MLogger::set_time_getter(myTimeGetter);
-    MLogger::logInfo("info with custom date formatter");
+    MLogger::log_info("info with custom date formatter");
 
     MLogger::reset_time_getter();
-    MLogger::logInfo("info with default date formatter");
+    MLogger::log_info("info with default date formatter");
 
     // Get last logged message (useful for tests)
     assert(MLogger::last_message() == "info with default date formatter");
 
     // Non-added logging levels do not show up
     assert(MLogger::remove_level("info"));
-    MLogger::logInfo("info should not be displayed here");
+    MLogger::log_info("info should not be displayed here");
 
     return 0;
 }
