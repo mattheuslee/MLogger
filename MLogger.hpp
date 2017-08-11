@@ -523,10 +523,12 @@ namespace termcolor
 #undef TERMCOLOR_OS_MACOS
 #undef TERMCOLOR_OS_LINUX
 
+#include <algorithm>
 #include <chrono>
 #include <ctime>
 #include <fstream>
 #include <functional>
+#include <initializer_list>
 #include <iostream>
 #include <memory>
 #include <ostream>
@@ -543,33 +545,30 @@ public:
     /***** output modifiers *****/
     static bool add_ostream(std::ostream & stream) {
         auto streamRefWrapper = std::reference_wrapper<std::ostream>(stream);
-        if (!find_ostream_(stream)) {
-            instance_().ostreams_.push_back(streamRefWrapper);
+        if (!find_ostream_wrapper_(stream)) {
+            instance_().ostreamWrappers_.push_back(streamRefWrapper);
             return true;
         }
         return false;
     }
 
     static void clear_ostreams() {
-        while (!instance_().ostreams_.empty()) {
-            instance_().ostreams_.erase(instance_().ostreams_.begin());
+        while (!instance_().ostreamWrappers_.empty()) {
+            instance_().ostreamWrappers_.erase(instance_().ostreamWrappers_.begin());
+        }
+        while (!instance_().ostreamPtrs_.empty()) {
+            instance_().ostreamPtrs_.erase(instance_().ostreamPtrs_.begin());
         }
     }
 
     static bool add_file(std::string const & fileName) {
         auto file = std::make_shared<std::ofstream>();
         file->open(fileName);
-        if (file->is_open() && !find_ofstream_(*file)) {
-            instance_().ofstreams_.push_back(file);
+        if (file->is_open() && !find_ostream_ptr_(*file)) {
+            instance_().ostreamPtrs_.push_back(file);
             return true;
         }
         return false;
-    }
-
-    static void clear_files() {
-        while (!instance_().ofstreams_.empty()) {
-            instance_().ofstreams_.erase(instance_().ofstreams_.begin());
-        }
     }
 
     /***** level controls *****/
@@ -578,6 +577,16 @@ public:
             return instance_().levels_.insert(level).second;
         }
         return false;
+    }
+
+    static bool add_levels(std::initializer_list<std::string> levels) {
+        auto result = true;
+        for (auto const &level : levels) {
+            if (!add_level(level)) {
+                result = false;
+            }
+        }
+        return result;
     }
 
     static bool remove_level(std::string const & level) {
@@ -589,11 +598,36 @@ public:
     }
 
     static bool set_max_level(std::string const & level) {
+        auto result = false;
         if (is_valid_level_(level)) {
+            result = true;
             clear_levels();
-            return true;
+            if (!add_level(level)) {
+                result = false;
+            }
+            if (level == "debug") {
+                if (!add_levels({"trace"})) {
+                    result = false;
+                }
+            } else if (level == "info") {
+                if (!add_levels({"trace", "debug"})) {
+                    result = false;
+                }
+            } else if (level == "warn") {
+                if (!add_levels({"trace", "debug", "info"})) {
+                    result = false;
+                }
+            } else if (level == "error") {
+                if (!add_levels({"trace", "debug", "info", "warn"})) {
+                    result = false;
+                }
+            } else if (level == "fatal") {
+                if (!add_levels({"trace", "debug", "info", "warn", "error"})) {
+                    result = false;
+                }
+            }
         }
-        return false;
+        return result;
     }
 
     /***** format controls *****/
@@ -623,10 +657,10 @@ public:
 
     /***** logging *****/
     static void blank_line() {
-        for (auto & ostreamWrapper : instance_().ostreams_) {
+        for (auto & ostreamWrapper : instance_().ostreamWrappers_) {
             ostreamWrapper.get() << std::endl;
         }
-        for (auto & streamPtr : instance_().ofstreams_) {
+        for (auto & streamPtr : instance_().ostreamPtrs_) {
             *streamPtr << std::endl;
         }
     }
@@ -637,10 +671,10 @@ public:
             auto additionalWhitespace = std::string(subLevel * 4, ' ');
             std::ostringstream oss;
             oss << additionalWhitespace << get_time_() << " [" + level + "] : " << message;
-            for (auto & ostreamWrapper : instance_().ostreams_) {
+            for (auto & ostreamWrapper : instance_().ostreamWrappers_) {
                 ostreamWrapper.get() << colour << oss.str() << termcolor::reset << std::endl;
             }
-            for (auto & streamPtr : instance_().ofstreams_) {
+            for (auto & streamPtr : instance_().ostreamPtrs_) {
                 *streamPtr << colour << oss.str() << termcolor::reset << std::endl;
             }
             instance_().lastMessage_ = message;
@@ -736,8 +770,8 @@ private:
         timeGetter_ = std::make_shared<StlTimeGetter>();
     }
 
-    std::vector<std::reference_wrapper<std::ostream>> ostreams_;
-    std::vector<std::shared_ptr<std::ofstream>> ofstreams_;
+    std::vector<std::reference_wrapper<std::ostream>> ostreamWrappers_;
+    std::vector<std::shared_ptr<std::ostream>> ostreamPtrs_;
     std::unordered_set<std::string> levels_;
     std::shared_ptr<TimeGetter> timeGetter_;
     std::string lastMessage_;
@@ -749,22 +783,18 @@ private:
         return instance;
     }
 
-    static bool find_ostream_(std::ostream const & stream) {
-        for (auto & streamWrapper : instance_().ostreams_) {
-            if (streamWrapper.get() == stream) {
-                return true;
-            }
-        }
-        return false;
+    static bool find_ostream_wrapper_(std::ostream const & stream) {
+        return std::any_of(instance_().ostreamWrappers_.begin(), instance_().ostreamWrappers_.end(),
+            [&](std::reference_wrapper<std::ostream> & wrapper) {
+                return wrapper.get() == stream;
+            });
     }
 
-    static bool find_ofstream_(std::ofstream const & stream) {
-        for (auto & streamPtr : instance_().ofstreams_) {
-            if (*streamPtr == stream) {
-                return true;
-            }
-        }
-        return false;
+    static bool find_ostream_ptr_(std::ostream const & stream) {
+        return std::any_of(instance_().ostreamPtrs_.begin(), instance_().ostreamPtrs_.end(),
+            [&](std::shared_ptr<std::ostream> & ptr) {
+                return *ptr == stream;
+            });
     }
 
     static Colour get_colour_(std::string const & level) {

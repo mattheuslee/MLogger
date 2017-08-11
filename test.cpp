@@ -22,6 +22,14 @@ int main(void) {
     assert(MLogger::add_level("error"));
     assert(MLogger::add_level("fatal"));
 
+    // Adding multiple levels
+    MLogger::clear_levels();
+    assert(MLogger::add_levels({"trace", "debug", "info", "warn", "error", "fatal"}));
+
+    // Setting max level
+    MLogger::clear_levels();
+    assert(MLogger::set_max_level("fatal"));
+
     // Logs with level argument
     MLogger::log("trace", "logging to trace");
     MLogger::log("debug", "logging to debug");
@@ -68,12 +76,12 @@ int main(void) {
     MLogger::blank_line();
 
     // Custom date getter
-    struct MyTimeGetter : public MLogger::TimeGetter {
+    struct CustomTimeGetter : public MLogger::TimeGetter {
         std::string operator() () {
-            return "my own custom time getter";
+            return "custom_date, custom_time";
         }
-    } myTimeGetter;
-    MLogger::set_time_getter(myTimeGetter);
+    } customTimeGetter;
+    MLogger::set_time_getter(customTimeGetter);
     MLogger::info("info with custom date formatter");
 
     MLogger::reset_time_getter();
