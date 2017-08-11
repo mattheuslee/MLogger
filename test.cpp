@@ -22,29 +22,50 @@ int main(void) {
     assert(MLogger::add_level("error"));
     assert(MLogger::add_level("fatal"));
 
-    // Logs without colour
-    MLogger::log("trace", "trace, no colour"); // Logs without colour
-    MLogger::log("debug", "debug, no colour"); // Logs without colour
-    MLogger::log("info", "info, no colour"); // Logs without colour
-    MLogger::log("warn", "warn, no colour"); // Logs without colour
-    MLogger::log("error", "error, no colour"); // Logs without colour
-    MLogger::log("fatal", "fatal, no colour"); // Logs without colour
+    // Logs with level argument
+    MLogger::log("trace", "logging to trace");
+    MLogger::log("debug", "logging to debug");
+    MLogger::log("info", "logging to info");
+    MLogger::log("warn", "logging to warn");
+    MLogger::log("error", "logging to error");
+    MLogger::log("fatal", "logging to fatal");
 
-    // Logs with default colours
-    MLogger::log_trace("trace with colour");
-    MLogger::log_debug("debug with colour");
-    MLogger::log_info("info with colour");
-    MLogger::log_warn("warn with colour");
-    MLogger::log_error("error with colour");
-    MLogger::log_fatal("fatal with colour");
+    // Logs with level argument and sublevel argument
+    MLogger::log("info", "logging to info, sublevel 0 (default)");
+    MLogger::log("info", "logging to info, sublevel 1", 1);
+    MLogger::log("info", "logging to info, sublevel 2", 2);
+
+    MLogger::blank_line();
+
+    // Logs using specific methods
+    MLogger::trace("logging to trace using method");
+    MLogger::debug("logging to debug using method");
+    MLogger::info("logging to info using method");
+    MLogger::warn("logging to warn using method");
+    MLogger::error("logging to error using method");
+    MLogger::fatal("logging to fatal using method");
+
+    // Logs using specific methods and sublevel argument
+    MLogger::info("logging to info using method, sublevel 0 (default)");
+    MLogger::info("logging to info using method, sublevel 1", 1);
+    MLogger::info("logging to info using method, sublevel 2", 2);
+
+    MLogger::blank_line();
 
     // Logs using streams
-    MLogger::log_trace_stream() << "trace" << " using streams " << 0; MLogger::end_log_stream();
-    MLogger::log_debug_stream() << "debug" << " using streams " << 1; MLogger::end_log_stream();
-    MLogger::log_info_stream() << "info" << " using streams " << 2; MLogger::end_log_stream();
-    MLogger::log_warn_stream() << "warn" << " using streams " << 3; MLogger::end_log_stream();
-    MLogger::log_error_stream() << "error" << " using streams " << 4; MLogger::end_log_stream();
-    MLogger::log_fatal_stream() << "fatal" << " using streams " << 5; MLogger::end_log_stream();
+    MLogger::stream().trace() << "trace" << " using streams " << 0;
+    MLogger::stream().debug() << "debug" << " using streams " << 1;
+    MLogger::stream().info() << "info" << " using streams " << 2;
+    MLogger::stream().warn() << "warn" << " using streams " << 3;
+    MLogger::stream().error() << "error" << " using streams " << 4;
+    MLogger::stream().fatal() << "fatal" << " using streams " << 5;
+
+    // Logs using streams and sublevel argument
+    MLogger::stream().info() << "info" << " using streams, sublevel " << 0 << " (default)";
+    MLogger::stream().info(1) << "info" << " using streams, sublevel " << 1;
+    MLogger::stream().info(2) << "info" << " using streams, sublevel " << 2;
+
+    MLogger::blank_line();
 
     // Custom date getter
     struct MyTimeGetter : public MLogger::TimeGetter {
@@ -53,17 +74,17 @@ int main(void) {
         }
     } myTimeGetter;
     MLogger::set_time_getter(myTimeGetter);
-    MLogger::log_info("info with custom date formatter");
+    MLogger::info("info with custom date formatter");
 
     MLogger::reset_time_getter();
-    MLogger::log_info("info with default date formatter");
+    MLogger::info("info with default date formatter");
 
     // Get last logged message (useful for tests)
     assert(MLogger::last_message() == "info with default date formatter");
 
     // Non-added logging levels do not show up
     assert(MLogger::remove_level("info"));
-    MLogger::log_info("info should not be displayed here");
+    MLogger::info("info should not be displayed here");
 
     return 0;
 }

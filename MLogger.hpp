@@ -588,6 +588,14 @@ public:
         instance_().levels_.clear();
     }
 
+    static bool set_max_level(std::string const & level) {
+        if (is_valid_level_(level)) {
+            clear_levels();
+            return true;
+        }
+        return false;
+    }
+
     /***** format controls *****/
     struct TimeGetter {
         // Returns the current time formatted as a std::string
@@ -614,80 +622,107 @@ public:
     }
 
     /***** logging *****/
-    static void log(std::string const & level, std::string const & message, Colour const & colour = termcolor::reset) {
-        if (is_added_level_(level)) {
+    static void blank_line() {
+        for (auto & ostreamWrapper : instance_().ostreams_) {
+            ostreamWrapper.get() << std::endl;
+        }
+        for (auto & streamPtr : instance_().ofstreams_) {
+            *streamPtr << std::endl;
+        }
+    }
+
+    static void log(std::string const & level, std::string const & message, int const & subLevel = 0) {
+        if (!message.empty() && is_added_level_(level)) {
+            auto colour = get_colour_(level);
+            auto additionalWhitespace = std::string(subLevel * 4, ' ');
             std::ostringstream oss;
-            oss << get_time_() << " [" + level + "] : " << message;
+            oss << additionalWhitespace << get_time_() << " [" + level + "] : " << message;
             for (auto & ostreamWrapper : instance_().ostreams_) {
                 ostreamWrapper.get() << colour << oss.str() << termcolor::reset << std::endl;
             }
             for (auto & streamPtr : instance_().ofstreams_) {
-                *streamPtr << oss.str() << std::endl;
+                *streamPtr << colour << oss.str() << termcolor::reset << std::endl;
             }
             instance_().lastMessage_ = message;
         }
     }
 
-    static void log_trace(std::string const & message) {
-        log("trace", message, termcolor::reset);
+    static void trace(std::string const & message, int const & subLevel = 0) {
+        log("trace", message, subLevel);
     }
 
-    static void log_debug(std::string const & message) {
-        log("debug", message, termcolor::reset);
+    static void debug(std::string const & message, int const & subLevel = 0) {
+        log("debug", message, subLevel);
     }
 
-    static void log_info(std::string const & message) {
-        log("info", message, termcolor::green);
+    static void info(std::string const & message, int const & subLevel = 0) {
+        log("info", message, subLevel);
     }
 
-    static void log_warn(std::string const & message) {
-        log("warn", message, termcolor::yellow);
+    static void warn(std::string const & message, int const & subLevel = 0) {
+        log("warn", message, subLevel);
     }
 
-    static void log_error(std::string const & message) {
-        log("error", message, termcolor::magenta);
+    static void error(std::string const & message, int const & subLevel = 0) {
+        log("error", message, subLevel);
     }
 
-    static void log_fatal(std::string const & message) {
-        log("fatal", message, termcolor::red);
+    static void fatal(std::string const & message, int const & subLevel = 0) {
+        log("fatal", message, subLevel);
     }
 
-    /***** stream variants on logging *****/
-    static std::ostream& log_trace_stream() {
-        instance_().streamerLogger_ = log_trace;
-        return instance_().streamer_;
-    }
+    /***** for stream logging *****/
+    class stream {
 
-    static std::ostream& log_debug_stream() {
-        instance_().streamerLogger_ = log_debug;
-        return instance_().streamer_;
-    }
+    public:
+        stream() {}
 
-    static std::ostream& log_info_stream() {
-        instance_().streamerLogger_ = log_info;
-        return instance_().streamer_;
-    }
+        ~stream() {
+            MLogger::log(level_, stream_.str(), subLevel_);
+        }
 
-    static std::ostream& log_warn_stream() {
-        instance_().streamerLogger_ = log_warn;
-        return instance_().streamer_;
-    }
+        std::ostringstream& trace(int const & subLevel = 0) {
+            level_ = "trace";
+            subLevel_ = subLevel;
+            return stream_;
+        }
 
-    static std::ostream& log_error_stream() {
-        instance_().streamerLogger_ = log_error;
-        return instance_().streamer_;
-    }
+        std::ostringstream& debug(int const & subLevel = 0) {
+            level_ = "debug";
+            subLevel_ = subLevel;
+            return stream_;
+        }
 
-    static std::ostream& log_fatal_stream() {
-        instance_().streamerLogger_ = log_fatal;
-        return instance_().streamer_;
-    }
+        std::ostringstream& info(int const & subLevel = 0) {
+            level_ = "info";
+            subLevel_ = subLevel;
+            return stream_;
+        }
 
-    static void end_log_stream() {
-        instance_().streamerLogger_(instance_().streamer_.str());
-        instance_().streamer_.str("");
-        instance_().streamer_.clear();
-    }
+        std::ostringstream& warn(int const & subLevel = 0) {
+            level_ = "warn";
+            subLevel_ = subLevel;
+            return stream_;
+        }
+
+        std::ostringstream& error(int const & subLevel = 0) {
+            level_ = "error";
+            subLevel_ = subLevel;
+            return stream_;
+        }
+
+        std::ostringstream& fatal(int const & subLevel = 0) {
+            level_ = "fatal";
+            subLevel_ = subLevel;
+            return stream_;
+        }
+
+    private:
+        std::string level_;
+        int subLevel_;
+        std::ostringstream stream_;
+
+    };
 
     /***** retrieve last logged message *****/
     static std::string last_message() {
@@ -730,6 +765,20 @@ private:
             }
         }
         return false;
+    }
+
+    static Colour get_colour_(std::string const & level) {
+        if (level == "fatal") {
+            return termcolor::red;
+        } else if (level == "error") {
+            return termcolor::magenta;
+        } else if (level == "warn") {
+            return termcolor::yellow;
+        } else if (level == "info") {
+            return termcolor::green;
+        } else {
+            return termcolor::reset;
+        }
     }
 
     static std::string get_time_() {
