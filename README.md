@@ -1,6 +1,6 @@
 # MLogger
-A basic interface for logging in C++.
-MLogger is made entirely out of static methods within the actual `MLogger` class, so the user does not have to worry about using macros or anything of that sort.
+A simple non-macro method for logging in C++.
+MLogger is made entirely out of static methods within the actual `MLogger` class.
 
 ## Requirements:
 C++11
